@@ -6,23 +6,19 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
 class Configuracoes(BaseSettings):
-    db_user: str
-    db_password: str
-    db_host: str = "localhost"
-    db_port: int = 3306
-    db_name: str
+    db_name: str = "livros.db"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 configuracoes = Configuracoes()
 
-DATABASE_URL = (
-    f"mysql+pymysql://{configuracoes.db_user}:{configuracoes.db_password}"
-    f"@{configuracoes.db_host}:{configuracoes.db_port}/{configuracoes.db_name}"
-)
+DATABASE_URL = f"sqlite:///./{configuracoes.db_name}"
 
-mecanismo_banco = create_engine(DATABASE_URL, pool_pre_ping=True)
+mecanismo_banco = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False},
+)
 criar_sessao = sessionmaker(bind=mecanismo_banco, autoflush=False, autocommit=False)
 
 
@@ -32,7 +28,6 @@ class BaseBanco(DeclarativeBase):
 
 def obter_sessao_banco() -> Generator[Session, None, None]:
     sessao_banco = criar_sessao()
-
     try:
         yield sessao_banco
     finally:
